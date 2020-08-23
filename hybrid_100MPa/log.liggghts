@@ -1,0 +1,155 @@
+LIGGGHTS (Version LIGGGHTS-PUBLIC 3.3.1, compiled 2016-01-14-14:02:34 by kloss, git commit 9b1fc57b77c483deaf2c0a6c69241c5d4f91e3c2 based on LAMMPS 23 Nov 2013)
+################################################################################
+### Coordination Calcution
+### This simulation is used with cpp code to calculate the average Coordination
+### number from the output files, even though it can be displayed by liggghts
+################################################################################
+
+###########################################
+### Simulation Parameters
+###########################################
+
+# Initialize
+units           si
+atom_style      sphere
+atom_modify     map array
+boundary        f f f
+newton          off
+communicate     single vel yes
+processors      * * *
+
+# Domain
+region          domain block -0.9 0.9 -0.9 0.9 0.0 4.0 units box
+create_box      2 domain
+Created orthogonal box = (-0.9 -0.9 0) to (0.9 0.9 4)
+  1 by 1 by 3 MPI processor grid
+
+# Neighbor Definition
+neighbor        0.03 bin
+neigh_modify    every 1 check no
+neigh_modify    delay 0
+
+###########################################
+### Input
+###########################################
+
+# Physical Properties
+fix             m1 all property/global youngsModulus peratomtype 10e7 10e7
+fix             m2 all property/global poissonsRatio peratomtype 0.5 0.5
+fix             m3 all property/global coefficientRestitution peratomtypepair 2 0.5 0.5 0.5 0.5
+fix             m4 all property/global coefficientFriction peratomtypepair 2 0.1 0.1 0.1 0.1
+
+# Cylinder Geometry
+fix             bottom all wall/gran model hertz tangential history primitive type 2 zplane 0.0
+fix             top all wall/gran model hertz tangential history primitive type 2 zplane 4.0
+fix             binwall all wall/gran model hertz tangential history primitive type 2 zcylinder 0.9 0. 0.
+
+# Particle Insertion
+fix             pts all particletemplate/sphere 15485863 atom_type 1 density constant 1000                 radius constant 0.03
+fix             pdd all particledistribution/discrete 15485867 1 pts 1.0
+
+region          factory cylinder z 0.0 0.0 0.9 0.0 4.0 units box
+fix             ins all insert/pack seed 123457 distributiontemplate pdd                 insert_every 500 overlapcheck yes particles_in_region 25000 region factory
+
+# Physics
+pair_style      gran model hertz tangential history
+pair_coeff      * *
+fix             integrate all nve/sphere
+fix             grav all gravity 9.81 vector 0.0 0.0 -1.0
+fix 		    ftco all property/global thermalConductivity peratomtype 100. 100.
+fix 		    ftca all property/global thermalCapacity peratomtype 10. 10.
+fix             heattransfer all heat/gran initial_temperature 300. 300.
+timestep        0.0001
+
+###########################################
+### Output
+###########################################
+
+# Per-atom computations
+compute         contact_atom all coord/atom 0.06
+compute         coord_ave all reduce ave c_contact_atom
+compute         compression all stress/atom
+
+# Thermodynamic output Settings
+thermo_style    custom cpuremain atoms c_coord_ave
+thermo          1000
+thermo_modify   line multi norm no lost ignore
+
+# Create dump file
+dump            output all custom 1000 post/d_*.dat id type c_contact_atom x y z                 radius fx fy fz f_Temp
+dump_modify     output pad 7 sort id first  yes
+
+# Run
+run             20000
+INFO: Particle insertion ins: inserting every 500 steps
+Memory usage per processor = 4.94129 Mbytes
+---------------- Step        0 ----- CPU =      0.0000 (sec) ----------------
+CPULeft  =         0.0000 Atoms    =              0 coord_av =         0.0000 
+INFO: Particle insertion ins: inserted 25000 particle templates (mass 2827.433388) at step 1
+ - a total of 25000 particle templates (mass 2827.433388) inserted so far.
+---------------- Step     1000 ----- CPU =     25.6117 (sec) ----------------
+CPULeft  =       486.6223 Atoms    =          25000 coord_av =         0.7164 
+---------------- Step     2000 ----- CPU =     46.7110 (sec) ----------------
+CPULeft  =       420.3989 Atoms    =          25000 coord_av =         0.5856 
+---------------- Step     3000 ----- CPU =     70.1917 (sec) ----------------
+CPULeft  =       397.7529 Atoms    =          25000 coord_av =         0.9231 
+---------------- Step     4000 ----- CPU =    100.7881 (sec) ----------------
+CPULeft  =       403.1525 Atoms    =          25000 coord_av =         1.7834 
+---------------- Step     5000 ----- CPU =    140.2278 (sec) ----------------
+CPULeft  =       420.6834 Atoms    =          25000 coord_av =         2.9019 
+---------------- Step     6000 ----- CPU =    200.5167 (sec) ----------------
+CPULeft  =       467.8722 Atoms    =          25000 coord_av =         4.3022 
+---------------- Step     7000 ----- CPU =    257.6677 (sec) ----------------
+CPULeft  =       478.5257 Atoms    =          25000 coord_av =         4.8468 
+---------------- Step     8000 ----- CPU =    320.4664 (sec) ----------------
+CPULeft  =       480.6996 Atoms    =          25000 coord_av =         4.8515 
+---------------- Step     9000 ----- CPU =    549.1524 (sec) ----------------
+CPULeft  =       671.1863 Atoms    =          25000 coord_av =         5.0823 
+---------------- Step    10000 ----- CPU =    686.7118 (sec) ----------------
+CPULeft  =       686.7118 Atoms    =          25000 coord_av =         5.2329 
+---------------- Step    11000 ----- CPU =    745.3366 (sec) ----------------
+CPULeft  =       609.8208 Atoms    =          25000 coord_av =         5.3502 
+---------------- Step    12000 ----- CPU =    802.6366 (sec) ----------------
+CPULeft  =       535.0911 Atoms    =          25000 coord_av =         5.4098 
+---------------- Step    13000 ----- CPU =    862.2142 (sec) ----------------
+CPULeft  =       464.2692 Atoms    =          25000 coord_av =         5.4581 
+---------------- Step    14000 ----- CPU =    922.7245 (sec) ----------------
+CPULeft  =       395.4534 Atoms    =          25000 coord_av =         5.4746 
+---------------- Step    15000 ----- CPU =    981.3841 (sec) ----------------
+CPULeft  =       327.1280 Atoms    =          25000 coord_av =         5.4867 
+---------------- Step    16000 ----- CPU =   1037.7392 (sec) ----------------
+CPULeft  =       259.4348 Atoms    =          25000 coord_av =         5.4934 
+---------------- Step    17000 ----- CPU =   1094.2848 (sec) ----------------
+CPULeft  =       193.1091 Atoms    =          25000 coord_av =         5.4970 
+---------------- Step    18000 ----- CPU =   1151.5370 (sec) ----------------
+CPULeft  =       127.9486 Atoms    =          25000 coord_av =         5.4961 
+---------------- Step    19000 ----- CPU =   1212.4170 (sec) ----------------
+CPULeft  =        63.8114 Atoms    =          25000 coord_av =         5.4990 
+---------------- Step    20000 ----- CPU =   1280.1348 (sec) ----------------
+CPULeft  =         0.0000 Atoms    =          25000 coord_av =         5.4980 
+Loop time of 1280.14 on 3 procs for 20000 steps with 25000 atoms
+
+Pair  time (%) = 96.6228 (7.54786)
+Neigh time (%) = 321.415 (25.1079)
+Comm  time (%) = 781.462 (61.0453)
+Outpt time (%) = 4.09013 (0.319508)
+Other time (%) = 76.5448 (5.97943)
+
+Nlocal:    8333.33 ave 18313 max 0 min
+Histogram: 1 0 0 1 0 0 0 0 0 1
+Nghost:    819 ave 1231 max 0 min
+Histogram: 1 0 0 0 0 0 0 0 0 2
+Neighs:    59333.3 ave 130553 max 0 min
+Histogram: 1 0 0 1 0 0 0 0 0 1
+FullNghs: 116445 ave 257773 max 0 min
+Histogram: 1 0 0 1 0 0 0 0 0 1
+
+Total # of neighbors = 349334
+Ave neighs/atom = 13.9734
+Neighbor list builds = 20000
+Dangerous builds = 0
+
+# Writing the restart file
+write_restart   liggghts.restart
+write_data      restart.data
+

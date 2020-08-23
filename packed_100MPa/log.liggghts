@@ -1,0 +1,272 @@
+LIGGGHTS (Version LIGGGHTS-PUBLIC 3.5.0, compiled 2017-04-17-09:08:43 by jorda, git commit f7be0a1370ccdd5f315a36cd9842c320035557aa)
+################################################################################
+### Coordination Calcution
+### This simulation is used with cpp code to calculate the average Coordination
+### number from the output files, even though it can be displayed by liggghts
+################################################################################
+
+###########################################
+### Simulation Parameters
+###########################################
+
+# Initialize
+units           si
+atom_style      sphere
+atom_modify     map array
+boundary        f f f
+newton          off
+communicate     single vel yes
+processors      * * *
+
+# Domain
+region          domain block -0.9 0.9 -0.9 0.9 0.0 4.0 units box
+create_box      2 domain
+Created orthogonal box = (-0.9 -0.9 0) to (0.9 0.9 4)
+  1 by 1 by 2 MPI processor grid
+
+# Neighbor Definition
+neighbor        0.03 bin
+neigh_modify    every 1 check no
+neigh_modify    delay 0
+
+###########################################
+### Input
+###########################################
+
+# Physical Properties
+fix             m1 all property/global youngsModulus peratomtype 10e7 10e7
+fix             m2 all property/global poissonsRatio peratomtype 0.5 0.5
+fix             m3 all property/global coefficientRestitution peratomtypepair 2 0.5 0.5 0.5 0.5
+fix             m4 all property/global coefficientFriction peratomtypepair 2 0.1 0.1 0.1 0.1
+
+# Cylinder Geometry
+fix             bottom all wall/gran model hertz tangential history primitive type 2 zplane 0.0
+fix             top all wall/gran model hertz tangential history primitive type 2 zplane 2.1
+fix             binwall all wall/gran model hertz tangential history primitive type 2 zcylinder 0.9 0. 0.
+
+# Particle Insertion
+fix             pts all particletemplate/sphere 15485863 atom_type 1 density constant 1000                 radius constant 0.03
+fix             pdd all particledistribution/discrete 15485867 1 pts 1.0
+region          factory cylinder z 0.0 0.0 0.9 0.0 2.1 units box
+fix             ins all insert/pack seed 123457 distributiontemplate pdd                 insert_every 500 overlapcheck yes particles_in_region 30000 region factory
+
+# Physics
+pair_style      gran model hertz tangential history
+pair_coeff      * *
+fix             integrate all nve/sphere
+fix             grav all gravity 9.81 vector 0.0 0.0 -1.0
+fix 		    ftco all property/global thermalConductivity peratomtype 100. 100.
+fix 		    ftca all property/global thermalCapacity peratomtype 10. 10.
+fix             heattransfer all heat/gran initial_temperature 300. 300.
+timestep        0.0001
+
+###########################################
+### Output
+###########################################
+
+# Per-atom computations
+compute         contact_atom all coord/atom 0.06
+compute         coord_ave all reduce ave c_contact_atom
+compute         compression all stress/atom
+
+# Thermodynamic output Settings
+thermo_style    custom cpuremain atoms c_coord_ave
+thermo          1000
+thermo_modify   line multi norm no lost ignore
+
+# Create dump file
+dump            output all custom 500 post/d_*.dat id type c_contact_atom x y z                 radius fx fy fz f_Temp
+dump_modify     output pad 7 sort id first  yes
+
+# Run
+run             20000
+INFO: Particle insertion ins: inserting every 500 steps
+Memory usage per processor = 5.06433 Mbytes
+---------------- Step        0 ----- CPU =      0.0000 (sec) ----------------
+CPULeft  =         0.0000 Atoms    =              0 coord_av =         0.0000 
+INFO: Particle insertion ins: inserted 15442 particle templates (mass 1.746449e+03) at step 1
+ - a total of 15442 particle templates (mass 1.746449e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 5673 particle templates (mass 6.416012e+02) at step 501
+ - a total of 21115 particle templates (mass 2.388050e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step     1000 ----- CPU =     64.9747 (sec) ----------------
+CPULeft  =      1234.5192 Atoms    =          21115 coord_av =         1.0947 
+INFO: Particle insertion ins: inserted 2202 particle templates (mass 2.490403e+02) at step 1001
+ - a total of 23317 particle templates (mass 2.637091e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 1739 particle templates (mass 1.966763e+02) at step 1501
+ - a total of 25056 particle templates (mass 2.833767e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step     2000 ----- CPU =    132.2552 (sec) ----------------
+CPULeft  =      1190.2972 Atoms    =          25056 coord_av =         4.3271 
+INFO: Particle insertion ins: inserted 1232 particle templates (mass 1.393359e+02) at step 2001
+ - a total of 26288 particle templates (mass 2.973103e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 837 particle templates (mass 9.466247e+01) at step 2501
+ - a total of 27125 particle templates (mass 3.067765e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step     3000 ----- CPU =    207.6071 (sec) ----------------
+CPULeft  =      1176.4400 Atoms    =          27125 coord_av =         4.5533 
+INFO: Particle insertion ins: inserted 511 particle templates (mass 5.779274e+01) at step 3001
+ - a total of 27636 particle templates (mass 3.125558e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 401 particle templates (mass 4.535203e+01) at step 3501
+ - a total of 28037 particle templates (mass 3.170910e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step     4000 ----- CPU =    285.2677 (sec) ----------------
+CPULeft  =      1141.0709 Atoms    =          28037 coord_av =         4.8970 
+INFO: Particle insertion ins: inserted 280 particle templates (mass 3.166725e+01) at step 4001
+ - a total of 28317 particle templates (mass 3.202577e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 207 particle templates (mass 2.341115e+01) at step 4501
+ - a total of 28524 particle templates (mass 3.225988e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step     5000 ----- CPU =    364.7826 (sec) ----------------
+CPULeft  =      1094.3479 Atoms    =          28524 coord_av =         5.1007 
+INFO: Particle insertion ins: inserted 156 particle templates (mass 1.764318e+01) at step 5001
+ - a total of 28680 particle templates (mass 3.243632e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 121 particle templates (mass 1.368478e+01) at step 5501
+ - a total of 28801 particle templates (mass 3.257316e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step     6000 ----- CPU =    445.0028 (sec) ----------------
+CPULeft  =      1038.3399 Atoms    =          28801 coord_av =         5.2490 
+INFO: Particle insertion ins: inserted 89 particle templates (mass 1.006566e+01) at step 6001
+ - a total of 28890 particle templates (mass 3.267382e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 71 particle templates (mass 8.029911e+00) at step 6501
+ - a total of 28961 particle templates (mass 3.275412e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step     7000 ----- CPU =    525.9621 (sec) ----------------
+CPULeft  =       976.7867 Atoms    =          28961 coord_av =         5.3763 
+INFO: Particle insertion ins: inserted 64 particle templates (mass 7.238229e+00) at step 7001
+ - a total of 29025 particle templates (mass 3.282650e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 54 particle templates (mass 6.107256e+00) at step 7501
+ - a total of 29079 particle templates (mass 3.288757e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step     8000 ----- CPU =    607.2959 (sec) ----------------
+CPULeft  =       910.9439 Atoms    =          29079 coord_av =         5.4465 
+INFO: Particle insertion ins: inserted 48 particle templates (mass 5.428672e+00) at step 8001
+ - a total of 29127 particle templates (mass 3.294186e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 44 particle templates (mass 4.976283e+00) at step 8501
+ - a total of 29171 particle templates (mass 3.299162e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step     9000 ----- CPU =    689.2244 (sec) ----------------
+CPULeft  =       842.3853 Atoms    =          29171 coord_av =         5.5356 
+INFO: Particle insertion ins: inserted 41 particle templates (mass 4.636991e+00) at step 9001
+ - a total of 29212 particle templates (mass 3.303799e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 39 particle templates (mass 4.410796e+00) at step 9501
+ - a total of 29251 particle templates (mass 3.308210e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step    10000 ----- CPU =    771.1651 (sec) ----------------
+CPULeft  =       771.1651 Atoms    =          29251 coord_av =         5.5889 
+INFO: Particle insertion ins: inserted 25 particle templates (mass 2.827433e+00) at step 10001
+ - a total of 29276 particle templates (mass 3.311038e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 26 particle templates (mass 2.940531e+00) at step 10501
+ - a total of 29302 particle templates (mass 3.313978e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step    11000 ----- CPU =    853.3628 (sec) ----------------
+CPULeft  =       698.2059 Atoms    =          29302 coord_av =         5.6721 
+INFO: Particle insertion ins: inserted 16 particle templates (mass 1.809557e+00) at step 11001
+ - a total of 29318 particle templates (mass 3.315788e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 17 particle templates (mass 1.922655e+00) at step 11501
+ - a total of 29335 particle templates (mass 3.317710e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step    12000 ----- CPU =    935.5737 (sec) ----------------
+CPULeft  =       623.7158 Atoms    =          29335 coord_av =         5.7202 
+INFO: Particle insertion ins: inserted 16 particle templates (mass 1.809557e+00) at step 12001
+ - a total of 29351 particle templates (mass 3.319520e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 12 particle templates (mass 1.357168e+00) at step 12501
+ - a total of 29363 particle templates (mass 3.320877e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step    13000 ----- CPU =   1017.6691 (sec) ----------------
+CPULeft  =       547.9757 Atoms    =          29363 coord_av =         5.7736 
+INFO: Particle insertion ins: inserted 8 particle templates (mass 9.047787e-01) at step 13001
+ - a total of 29371 particle templates (mass 3.321782e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 6 particle templates (mass 6.785840e-01) at step 13501
+ - a total of 29377 particle templates (mass 3.322460e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step    14000 ----- CPU =   1099.8323 (sec) ----------------
+CPULeft  =       471.3567 Atoms    =          29377 coord_av =         5.7849 
+INFO: Particle insertion ins: inserted 3 particle templates (mass 3.392920e-01) at step 14001
+ - a total of 29380 particle templates (mass 3.322800e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 4 particle templates (mass 4.523893e-01) at step 14501
+ - a total of 29384 particle templates (mass 3.323252e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step    15000 ----- CPU =   1182.0996 (sec) ----------------
+CPULeft  =       394.0332 Atoms    =          29384 coord_av =         5.8194 
+INFO: Particle insertion ins: inserted 4 particle templates (mass 4.523893e-01) at step 15001
+ - a total of 29388 particle templates (mass 3.323704e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 2 particle templates (mass 2.261947e-01) at step 15501
+ - a total of 29390 particle templates (mass 3.323931e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step    16000 ----- CPU =   1248.8818 (sec) ----------------
+CPULeft  =       312.2205 Atoms    =          29390 coord_av =         5.8359 
+INFO: Particle insertion ins: inserted 3 particle templates (mass 3.392920e-01) at step 16001
+ - a total of 29393 particle templates (mass 3.324270e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 2 particle templates (mass 2.261947e-01) at step 16501
+ - a total of 29395 particle templates (mass 3.324496e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step    17000 ----- CPU =   1310.7710 (sec) ----------------
+CPULeft  =       231.3125 Atoms    =          29395 coord_av =         5.8471 
+INFO: Particle insertion ins: inserted 3 particle templates (mass 3.392920e-01) at step 17001
+ - a total of 29398 particle templates (mass 3.324835e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 2 particle templates (mass 2.261947e-01) at step 17501
+ - a total of 29400 particle templates (mass 3.325062e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step    18000 ----- CPU =   1372.6696 (sec) ----------------
+CPULeft  =       152.5188 Atoms    =          29400 coord_av =         5.8493 
+INFO: Particle insertion ins: inserted 3 particle templates (mass 3.392920e-01) at step 18001
+ - a total of 29403 particle templates (mass 3.325401e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 1 particle templates (mass 1.130973e-01) at step 18501
+ - a total of 29404 particle templates (mass 3.325514e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step    19000 ----- CPU =   1434.4864 (sec) ----------------
+CPULeft  =        75.4993 Atoms    =          29404 coord_av =         5.8510 
+INFO: Particle insertion ins: inserted 1 particle templates (mass 1.130973e-01) at step 19001
+ - a total of 29405 particle templates (mass 3.325627e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+INFO: Particle insertion ins: inserted 1 particle templates (mass 1.130973e-01) at step 19501
+ - a total of 29406 particle templates (mass 3.325740e+03) inserted so far.
+WARNING: Particle insertion: Less insertions than requested (../fix_insert.cpp:795)
+---------------- Step    20000 ----- CPU =   1496.1618 (sec) ----------------
+CPULeft  =         0.0000 Atoms    =          29406 coord_av =         5.8697 
+Loop time of 1496.16 on 2 procs for 20000 steps with 29406 atoms
+
+Pair  time (%) = 168.081 (11.2342)
+Neigh time (%) = 464.093 (31.0189)
+Comm  time (%) = 706.231 (47.2028)
+Outpt time (%) = 6.66715 (0.445617)
+Other time (%) = 151.09 (10.0985)
+
+Nlocal:    14703 ave 28021 max 1385 min
+Histogram: 1 0 0 0 0 0 0 0 0 1
+Nghost:    1319 ave 1385 max 1253 min
+Histogram: 1 0 0 0 0 0 0 0 0 1
+Neighs:    106003 ave 201984 max 10022 min
+Histogram: 1 0 0 0 0 0 0 0 0 1
+FullNghs: 208767 ave 400729 max 16805 min
+Histogram: 1 0 0 0 0 0 0 0 0 1
+
+Total # of neighbors = 417534
+Ave neighs/atom = 14.1989
+Neighbor list builds = 20000
+Dangerous builds = 0
+
+# Writing the restart file
+write_restart   liggghts.restart
+write_data      restart.data
+
